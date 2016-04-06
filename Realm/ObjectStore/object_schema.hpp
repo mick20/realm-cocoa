@@ -39,7 +39,8 @@ namespace realm {
         ObjectSchema(const Group *group, const std::string &name);
 
         std::string name;
-        std::vector<Property> properties;
+        std::vector<Property> persisted_properties;
+        std::vector<Property> computed_properties;
         std::string primary_key;
 
         Property *property_for_name(StringData name);
