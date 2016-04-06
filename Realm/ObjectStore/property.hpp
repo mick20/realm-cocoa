@@ -43,12 +43,14 @@ namespace realm {
         PropertyTypeObject = 12,
         /** Array type. See [Realm Models](https://realm.io/docs/objc/latest/#models) */
         PropertyTypeArray  = 13,
+        PropertyTypeLinkingObjects = 14,
     };
 
     struct Property {
         std::string name;
         PropertyType type;
         std::string object_type;
+        std::string link_origin_property_name;
         bool is_primary = false;
         bool is_indexed = false;
         bool is_indexable() const { return type == PropertyTypeInt || type == PropertyTypeBool || type == PropertyTypeString || type == PropertyTypeDate; }
@@ -80,6 +82,8 @@ namespace realm {
                 return "object";
             case PropertyTypeArray:
                 return "array";
+            case PropertyTypeLinkingObjects:
+                return "linking objects";
         }
     }
 }
