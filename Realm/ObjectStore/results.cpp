@@ -337,6 +337,10 @@ TableView Results::get_tableview()
 
 StringData Results::get_object_type() const noexcept
 {
+    if (!m_table) {
+        return StringData();
+    }
+
     return ObjectStore::object_type_for_table_name(m_table->get_name());
 }
 
