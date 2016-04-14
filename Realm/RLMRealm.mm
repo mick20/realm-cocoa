@@ -269,6 +269,9 @@ void RLMRealmTranslateException(NSError **error) {
                 break;
         }
     }
+    catch (AddressSpaceExhausted const &ex) {
+        RLMSetErrorOrThrow(RLMMakeError(RLMErrorAddressSpaceExhausted, ex), error);
+    }
     catch (std::system_error const& ex) {
         RLMSetErrorOrThrow(RLMMakeError(ex), error);
     }
@@ -492,6 +495,10 @@ static void CheckReadWrite(RLMRealm *realm, NSString *msg=@"Cannot write to a re
     }
     catch (File::AccessError const& ex) {
         RLMSetErrorOrThrow(RLMMakeError(RLMErrorFail, ex), outError);
+        return NO;
+    }
+    catch (AddressSpaceExhausted const &ex) {
+        RLMSetErrorOrThrow(RLMMakeError(RLMErrorAddressSpaceExhausted, ex), outError);
         return NO;
     }
     catch (std::exception const& ex) {
