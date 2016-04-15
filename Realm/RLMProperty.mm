@@ -382,13 +382,19 @@ static bool rawTypeIsComputedProperty(NSString *rawType) {
     _linkOriginPropertyName = linkingObjectsInfo[@"property"];
 
     bool isReadOnly = [self parseObjcProperty:property];
-    if (isReadOnly && !rawTypeIsComputedProperty(_objcRawType)) {
+    bool isComputedProperty = rawTypeIsComputedProperty(_objcRawType);
+    if (isReadOnly && !isComputedProperty) {
         return nil;
     }
 
     if (![self setTypeFromRawType]) {
         @throw RLMException(@"Can't persist property '%@' with incompatible type. "
                              "Add to ignoredPropertyNames: method to ignore.", self.name);
+    }
+
+    if (!isReadOnly && isComputedProperty) {
+        @throw RLMException(@"Property '%@' must be declared as readonly as %@ properties cannot be written to.",
+                            self.name, RLMTypeToString(_type));
     }
 
     // update getter/setter names
