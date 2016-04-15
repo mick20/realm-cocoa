@@ -165,6 +165,13 @@ void AsyncQuery::run()
     }
 
     m_tv = m_query->find_all();
+
+    // FIXME: There's no way to ensure that m_query's restricting view, if present, has been synced to the current
+    // version prior to the above call to Query::find_all. If it hasn't been synced then the resulting TableView
+    // is also out of sync. Calling sync_if_needed on the resulting TableView ensures that the restricting view
+    // is brought into sync, at the expense of re-evaluating the query when the restricting view was out of sync.
+    m_tv.sync_if_needed();
+
     if (m_sort) {
         m_tv.sort(m_sort.columnIndices, m_sort.ascending);
     }
