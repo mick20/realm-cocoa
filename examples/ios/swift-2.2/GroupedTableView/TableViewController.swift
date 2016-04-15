@@ -40,7 +40,7 @@ var objectsBySection = [Results<DemoObject>]()
 
 class TableViewController: UITableViewController {
 
-    var notificationToken: NotificationToken?
+    var notificationTokens = [NotificationToken]()
     var realm: Realm!
 
     override func viewDidLoad() {
@@ -49,16 +49,35 @@ class TableViewController: UITableViewController {
         setupUI()
         realm = try! Realm()
 
-        // Set realm notification block
-        notificationToken = realm.addNotificationBlock { [unowned self] note, realm in
-            self.tableView.reloadData()
-        }
-        for section in sectionTitles {
-            let unsortedObjects = realm.objects(DemoObject).filter("sectionTitle == '\(section)'")
+        for i in 0..<sectionTitles.count {
+            let unsortedObjects = realm.objects(DemoObject).filter("sectionTitle == '\(sectionTitles[i])'")
             let sortedObjects = unsortedObjects.sorted("date", ascending: true)
             objectsBySection.append(sortedObjects)
+
+            notificationTokens.append(sortedObjects.addNotificationBlock { [unowned self] (changes: RealmCollectionChange) in
+                switch changes {
+                case .Initial:
+                    // Results are now populated and can be accessed without blocking the UI
+                    self.tableView.reloadSections(NSIndexSet(index: i), withRowAnimation: .None)
+                    break
+                case .Update(_, let deletions, let insertions, let modifications):
+                    // Query results have changed, so apply them to the TableView
+                    self.tableView.beginUpdates()
+                    self.tableView.insertRowsAtIndexPaths(insertions.map { NSIndexPath(forRow: $0, inSection: i) },
+                        withRowAnimation: .Automatic)
+                    self.tableView.deleteRowsAtIndexPaths(deletions.map { NSIndexPath(forRow: $0, inSection: i) },
+                        withRowAnimation: .Automatic)
+                    self.tableView.reloadRowsAtIndexPaths(modifications.map { NSIndexPath(forRow: $0, inSection: i) },
+                        withRowAnimation: .Automatic)
+                    self.tableView.endUpdates()
+                    break
+                case .Error(let err):
+                    // An error occurred while opening the Realm file on the background worker thread
+                    fatalError("\(err)")
+                    break
+                }
+            })
         }
-        tableView.reloadData()
     }
 
     // UI
@@ -67,8 +86,10 @@ class TableViewController: UITableViewController {
         tableView.registerClass(Cell.self, forCellReuseIdentifier: "cell")
 
         self.title = "GroupedTableView"
-        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "BG Add", style: .Plain, target: self, action: "backgroundAdd")
-        self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .Add, target: self, action: "add")
+        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "BG Add", style: .Plain,
+                                                                target: self, action: #selector(backgroundAdd))
+        self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .Add,
+                                                                 target: self, action: #selector(add))
     }
 
     // Table view data source
